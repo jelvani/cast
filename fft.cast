@@ -1,0 +1,208 @@
+/* short example channel and state-machine language (cast) for building a systolic FFT butterfly
+ * See the go version for a better description of the approach 
+ */ 
+   
+space fft_butterfly /* spaces provide a name for spatial layout directives */ 
+
+import stdlib    /* import types and other machine definitions */ 
+
+const FFT_LOG uint32 = 16  // log of the number of inputs/outputs
+const FFT_LOG1 uint32 = (FFT_LOG+1)  // the nubmber of stages/columns of the FFT with the input column
+const FFT_VSIZE uint32 = (1<<FFT_LOG)  // size of the input vector 
+const FFT_NODES uint32 = (FFT_VSIZE * (FFT_LOG + 1) ) // number of nodes
+
+const QUIT uint8 = 0xFF
+const DEBUG_ON uint8 = 0xDE
+const DEBUG_OFF uint8 = 0x0D
+
+
+/* inp as a numbits number and bit-reverses it. 
+ * inp < 2^(numbits) for meaningful bit-reversal
+ */ 
+func bitrev(uint32 inp, uint32 numbits) {
+  
+  var uint32 i;
+  var int32 rev;
+	i=0;
+	rev = 0;
+	for i=0; i < numbits; i++  {
+		rev = (rev << 1) | (inp & 1);
+		inp >>= 1;
+	}
+	return rev;
+}
+
+// for an FFT of size N, get the twiddle factor for a node at column c, row r
+// recall the twiddle factor is the complex number on the uint circle
+// higher levels (columns) break the circle into more parts
+// see the reference 
+func compute_twiddle_factor(uint16 col,row) complex128 {
+  var uint32 m;
+  var uint32 N;
+	var float64 inner;
+	var complex128 retval;
+	
+	N = (1<<(col+1));   // factors on the uint circle for a N-node FFT (2^col)-1
+	m = row & (N -1);    // row % N , recall that x modulo y = (x & (y − 1))
+
+	// recall e^-i*2*Pi*m/N = cos(2*Pi*m/N) - i*sin(2*Pi*m/N)
+	inner = 2.0*math.Pi*float64(m)/float64(N) ; // fraction on the uint circle to move 
+	retval = (complex(math.Cos(inner),-1.0*math.Sin(inner))) ; // definition of exponent above
+	return retval;
+}
+
+
+/* this is the machine's instantiation definition 
+ * Use square brackets like Mojo for instantiation compile-time parameters
+ * The machine just takes in 1 input and copies it to the output 
+ */
+machine fft_input_node[row:uint16, debug:bool] {
+
+  /* the input and output channels to the state machine */ 
+  interface {
+     input complex128 in1;
+     input uint16 control; 
+     output complex128 out1,out2;
+  }
+
+  memory { 
+     complex128 value;  // inputs and the resulting value 
+     uint16 msg;            // control message
+  } 
+  
+  states { 
+    copy: value<-in1 { // input clauses 
+        out1<-value;
+        out2<-value;
+        nextstate copy;
+    }
+  halt: {                 // this exists if we want to halt the node 
+      nextstate halt;
+  }
+    // there are exception states and exceptions on channels
+    // exception occur when an input "overrides" other states
+    // channels can also throw exceptions (channel exceptions are not shown )
+    except debug: msg<-control {
+        switch msg {
+	    case QUIT:
+	      printf("----input node (%d) ending \n",row,msg)
+        nextstate halt;
+	    case DEBUG_ON:
+		debug = 1;
+	    case DEBUG_OFF:
+                debug = 0;
+            default:
+               printf("----input node (%d) unknown message type %d \n",row,msg)	    
+        }
+        nextstate compute; 
+    }
+  } ; // end states clause
+
+}
+  
+
+/* this is the machine's instantiation definition 
+ * Use square brackets like Mojo for instantiation parameters
+ */
+
+/* variables in square brackets must be set when the machine is instantiated
+ */ 
+machine fft_compute_node[col:uint16,row:uint16,Wn:complex128,debug:bool] {
+
+  /* the input and output channels */
+  interface {
+     input complex128 in1,in2 ;
+     input uint16 control; 
+     output complex128 out1,out2;
+  }
+
+  memory { 
+     complex128 a,b,value;  // inputs and the resulting value 
+     uint16 msg;            // control message
+  } 
+  
+  states { 
+    compute: a<-in1, b<-in2 { // input clauses 
+      value = a + Wn*b;       // computation looks like C with Go channel syntax 
+       out1<-value;
+       if ! (col == (FFT_LOG-1)) { // 2nd channel not used used on the last column 
+          out2<-value;
+       }
+    nextstate compute;
+    }
+
+  halt: {                 // this exists if we want to halt the node 
+    nextstate halt;
+  }
+    // there are exception states and exceptions on channels
+    // exception occur when an input "overrides" other states
+    // channels can also throw exceptions (channel exceptions are not shown )
+    except debug: msg<-control {
+        switch msg {
+	    case QUIT:
+	      printf("----input node (%d) ending \n",row,msg)
+              nextstate halt;
+	    case DEBUG_ON:
+		debug = 1;
+	    case DEBUG_OFF:
+                debug = 0;
+            default:
+               printf("----input node (%d) unknown message type %d \n",row,msg)	    
+        }
+        nextstate compute; 
+    }
+  } ; // end states clause
+}  
+
+  /* the instantiate clause causes all our
+   *
+   */ 
+
+instantiate {
+  uint16 c,r;   // the columns and rows of the FFT butterfly 
+
+  
+  fft_input_node input_nodes[FFT_VSIZE];
+  fft_compute_node main_array[FFT_LOG][FFT_VSIZE]; 
+
+  /* connect the input array to the main array */
+  
+  for c = 0; c < FFT_LOG ; c++ {   // we have a log(fftsize) columns 
+    for r = 0; r < FFT_VSIZE ; r++ {  // vector size rows 
+
+      // get the distance from the current row to the target row for the cross input channel 
+      cross_distance_out = (1<<c) ;  // the output channel is one column to the right, so the distance is larger
+	
+      // the value of the bit in the row number determines if the output offset is up or down
+      cross_bit_value_out = r & cross_distance_out ; 
+
+      // these are the output rows for the A and B channels 
+      if (cross_bit_value_out == 0) {
+	cross_row_output = r + cross_distance_out;
+      } else {
+	cross_row_output = r - cross_distance_out ;
+      }
+
+      
+      if (c == 0) {  // the first layer needs input nodes
+	reversed = bitrev(r,FFT_LOG);
+	// connect the input channels to the main array
+	// need to insure all instantiation variables are set 
+	input_nodes[reversed].row = r;
+	input_nodes[reversed].debug = 1; 
+	input_nodes[reversed].out1 -> main_array[0:r].in1;
+	input_nodes[reversed].out2 -> main_array[0:cross_row_output].in2;
+      } else { // compute layers
+	twiddle = compute_twiddle_factor(c-1,r); 
+	main_array[c:r].out1 -> main_array[c+1:r].in1;   // connect the out channel of column C to input of c+1 
+        main_array[c:r].out2 -> main_array[c+1:cross_row_output].in2;   
+      }
+    } // end for compute nodes
+  }
+}
+
+/* we need to add some LTL assertions here
+ */ 
+assertions {
+
+}

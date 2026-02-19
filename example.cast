@@ -1,0 +1,65 @@
+enum commands = {CLEAR, PRINT}
+// a machine can take compile-time parameters inside [ ]
+machine ReadMem [mem_size: uint16] {
+	// all channels are declared here
+	interface {
+		input uint16 idx;
+		input uint16 mem_val;
+		input commands trigger;
+		output uint16 memory_idx;
+		output uint16 memory_write_val;
+	}
+	// these are variables shared between states of a single machine
+	shared {
+		var uint16 num_reads;
+		var uint16 val;
+		var uint16 index;
+	}
+	// each state is defined here
+	states {
+		// all paths through a state must end in a goto
+		read_data: index <- idx {
+			memory_idx <- index;
+			val <- mem_val;
+			num_reads++;
+			goto filter;
+		}
+		filter: {
+			if (val < 256) {
+				print("within range");
+			} else {
+				memory_idx <- index;
+				memory_write_val <- 0;
+			}
+			goto read_data;
+		}
+		// exception states are triggered by channels
+		exception triggers: cmd <- trigger {
+			if (cmd == CLEAR) {
+				for(var uint16 i=0; i<mem_size; i++) {
+					memory_idx <- i;
+					memory_write_val <- 0;
+				}
+			} else if (cmd == PRINT) {
+				for(var uint16 i=0; i<mem_size; i++) {
+					memory_idx <- i;
+					var uint16 data <- mem_val;
+					print(data);
+				}
+			}
+		}
+	}
+}
+instantiate {
+	mm = MemoryModule(); // defined externally
+	rm = ReadMem[mem_size=1024]();
+	// connect channels
+	rm.mem_val <- mm.mem_val;
+	mm.write <- rm.memory_write_val;
+	mm.mem_index <- rm.memory_idx;
+	rm.memory_idx <- mm.mem_index;
+	// send an input
+	rm.idx <- 10;
+	// trigger an exception
+	rm.trigger <- CLEAR;
+}
