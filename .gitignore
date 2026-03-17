@@ -1,0 +1,35 @@
+# -----------------------------
+# C++ and CMake Build Artifacts
+# -----------------------------
+# Ignore the entire build directory which contains CMake caches, 
+# Ninja build files, object files (*.o), and the final executable (parser_app).
+# It also correctly ignores the ANTLR-generated C++ files inside build/generated/.
+/build/
+
+# (Optional) Ignore other common build directory names just in case
+/out/
+/bin/
+
+# -----------------------------
+# Python Artifacts
+# -----------------------------
+# Ignore compiled Python bytecode and cache directories
+__pycache__/
+*.py[cod]
+*$py.class
+
+# -----------------------------
+# OS & Editor Files (Recommended)
+# -----------------------------
+# Mac
+.DS_Store
+._*
+
+# Windows
+Thumbs.db
+ehthumbs.db
+
+# Common IDEs (VS Code, CLion/IntelliJ)
+.vscode/
+.idea/
+*.swp
