@@ -1,4 +1,4 @@
-enum commands = {CLEAR, PRINT}
+enum commands = {CLEAR, PRINT};
 // a machine can take compile-time parameters inside [ ]
 machine ReadMem [mem_size: uint16] {
 	// all channels are declared here

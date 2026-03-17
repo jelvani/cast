@@ -1,7 +1,9 @@
-# Running the Parser
-Make sure to have `lark` python package installed.
+# build instructions
+Must have ANTLR4 installed
 ```bash
-python3 parser/cast_parser.py fft.cast
+mkdir build && cd build
+cmake .. -G Ninja
+ninja
 ```
 
 
