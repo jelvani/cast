@@ -40,21 +40,22 @@ decl_exception:
 decl_type: 'type' ident type;
 decl_func:
 	'func' func_name func_args type_func_return? stmt_block;
-decl_io: ('input' | 'output') (ident_typed | ident) (
+decl_io: direction=(INPUT | OUTPUT) (ident_typed | ident) (
 		ident (',' ident)*
 	) ';'?;
 
 machine_block:
 	'{' decl_interface decl_shared? decl_memory? decl_states? '}';
 memory_block: '{' (ident_typed (',' ident)* ';'?)* '}';
-shared_block: '{' stmt_var* '}';
+shared_block: '{' decl_var* '}';
 states_block: '{' (decl_state | decl_exception)* '}';
 
 interface_block: '{' decl_io* '}';
 stmt_block: '{' stmt* '}';
 
 stmt: (
-		stmt_var
+		decl_var
+		| inst_module
 		| stmt_for
 		| stmt_if
 		| stmt_switch
@@ -66,11 +67,11 @@ stmt: (
 		| stmt_nextstate
 	) ';'?;
 
-stmt_nextstate: 'nextstate' ident;
+stmt_nextstate: 'goto' ident;
 
 expr_multiple: expr (',' expr)*;
 stmt_return: 'return' expr_multiple;
-stmt_binary: expr_multiple assignment_op expr_multiple;
+stmt_binary: expr assignment_op expr;
 stmt_update: expr_multiple update_op;
 stmt_switch: 'switch' stmt '{' expr_switch_case* '}';
 expr_switch_case:
@@ -78,13 +79,15 @@ expr_switch_case:
 	| 'case' expr ':' stmt*
 	| 'default' ':' stmt*;
 
-stmt_var: ('var' ident_typed ('=' expr)?) ';'?;
+decl_var: ('var' ident_typed ('=' expr)?) ';'?;
+
+inst_module: ident '=' expr_func_call ';'?;
 
 constDecl: 'const' CNAME type? '=' expr;
 
 stmt_for:
 	'for' '(' (
-		(stmt_binary | stmt_var) ';' expr ';' (
+		(stmt_binary | decl_var) ';' expr ';' (
 			stmt_binary
 			| stmt_update
 		)
@@ -93,12 +96,12 @@ stmt_if: 'if' expr stmt_block ('else' (stmt_block | stmt_if))?;
 
 expr:
 	ident
+	| ident_field
 	| string_literal
 	| number_literal
 	| nil_literal
 	| '(' expr ')'
 	| unary_op expr
-	| expr '.' expr
 	| expr '[' (expr | expr? ':' expr?) ']'
 	| expr '(' (expr (',' expr)*)? ')' expr_compile_time_params?
 	| expr bin_op expr
@@ -129,17 +132,17 @@ bin_op:
 	| '^';
 unary_op: '!' | '&' | '*';
 assignment_op:
-	'<-'
-	| '->'
-	| ':='
-	| '='
-	| '+='
-	| '-='
-	| '*='
-	| '/='
-	| '^='
-	| '<<='
-	| '>>=';
+	ASSIGN_CHANNEL_RECEIVE
+	| ASSIGN_CHANNEL_SEND
+	| ASSIGN_WALRUS
+	| ASSIGN
+	| ASSIGN_ADD
+	| ASSIGN_SUB
+	| ASSIGN_MUL
+	| ASSIGN_DIV
+	| ASSIGN_XOR
+	| ASSIGN_SHL
+	| ASSIGN_SHR;
 update_op: '++' | '--';
 
 ident_typed: type (ident (',' ident)*)? | ident (',' ident)*;
@@ -173,7 +176,7 @@ number_literal: HEX | INTEGER;
 string_literal: ESCAPED_STRING;
 nil_literal: NULL;
 
-expr_field: expr '.' expr;
+ident_field: ident '.' ident;
 expr_indexed: expr '[' (expr | expr? ':' expr?) ']';
 expr_binary: expr bin_op expr;
 expr_unary: unary_op expr;
@@ -192,6 +195,19 @@ FLOAT: [0-9]+ ('.' [0-9]+)?;
 HEX: '0x' [0-9a-fA-F]+;
 NULL: 'nil';
 
+// assignment operators
+ASSIGN_CHANNEL_RECEIVE: '<-';
+ASSIGN_CHANNEL_SEND: '->';
+ASSIGN_WALRUS: ':=';
+ASSIGN: '=';
+ASSIGN_ADD: '+=';
+ASSIGN_SUB: '-=';
+ASSIGN_MUL: '*=';
+ASSIGN_DIV: '/=';
+ASSIGN_XOR: '^=';
+ASSIGN_SHL: '<<=';
+ASSIGN_SHR: '>>=';
+
 // types
 T_STRING: 'string';
 T_INTEGER: 'int';
@@ -201,5 +217,8 @@ T_INT32: 'int32';
 T_UINT32: 'uint32';
 T_UINT16: 'uint16';
 T_BOOL: 'bool';
+
+INPUT: 'input' ;
+OUTPUT: 'output' ;
 
 CNAME: [a-zA-Z_][a-zA-Z0-9_]*;
