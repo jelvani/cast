@@ -94,7 +94,7 @@ ninja
 ## Building
 
 ```bash
-git clone <this-repo> cast && cd cast
+git clone https://github.com/jelvani/cast cast && cd cast
 mkdir build && cd build
 cmake .. -G Ninja \
   -DCMAKE_PREFIX_PATH="/path/to/llvm-project/build;/path/to/circt/build"
