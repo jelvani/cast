@@ -53,10 +53,11 @@ cast source (.cast)
 
 ### Building LLVM + MLIR
 
+*No specific version of LLVM or CIRCT to checkout currently. Latest CIRCT depends on latest LLVM branch*
+
 ```bash
 git clone https://github.com/llvm/llvm-project
 cd llvm-project
-git checkout llvmorg-22.1.1
 mkdir build && cd build
 cmake -G Ninja ../llvm \
   -DLLVM_ENABLE_PROJECTS="mlir" \
