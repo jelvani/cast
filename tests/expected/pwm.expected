@@ -1,0 +1,8 @@
+[latch] duty cycle = 30 / 100
+  phase=0 OUT=1 (HIGH)
+  phase=1 OUT=1 (HIGH)
+  phase=2 OUT=1 (HIGH)
+  phase=3 OUT=1 (HIGH)
+  phase=4 OUT=1 (HIGH)
+  phase=5 OUT=1 (HIGH)
+  phase=6 OUT=1 (HIGH)

@@ -32,7 +32,8 @@ cast source (.cast)
 6. [Language reference](#language-reference)
 7. [Examples](#examples)
 8. [Testing](#testing)
-9. [How it works](#how-it-works)
+9. [run_cast_test.sh](#run_cast_testsh)
+10. [How it works](#how-it-works)
 
 ---
 
@@ -373,7 +374,7 @@ Run any example:
 
 ## Testing
 
-`ninja check` compiles every listed example through two stages and reports results:
+`ninja check` compiles every listed example through up to three stages and reports results:
 
 ```bash
 ninja -C build check
@@ -381,36 +382,111 @@ ninja -C build check
 
 | Stage | Tool | What it checks |
 |-------|------|----------------|
-| 1 | `castc --tb` | cast source compiles without error |
+| 1 | `castc --tb --duration=100` | cast source compiles without error |
 | 2 | `iverilog -g2012 -gno-assertions` | generated Verilog is valid and elaborates cleanly |
+| 3 | `vvp` + `diff` | simulation output matches `tests/expected/<name>.expected` |
+
+Stage 3 only runs when a corresponding expected file exists. All 14 built-in examples
+include one.
 
 Output on a passing run:
 
 ```
 Test project /path/to/cast/build
-    Start  1: example.simple
-1/14 Test  #1: example.simple ...........   Passed
-    Start  2: example.counter
-2/14 Test  #2: example.counter ..........   Passed
+      Start  1: example.simple
+ 1/14 Test  #1: example.simple ...................   Passed
+      Start  2: example.counter
+ 2/14 Test  #2: example.counter ..................   Passed
 ...
-14/14 Test #14: example.uart_tx ..........  Passed
+14/14 Test #14: example.uart_tx ..................   Passed
 
 100% tests passed, 0 tests failed out of 14
 ```
 
-On failure the stderr from the failing stage is shown. To run a single test:
+On failure, the stderr from the failing stage is shown. For a Stage 3 failure the
+diff is printed so it is immediately clear which lines changed:
+
+```
+  [3/3] simulate + verify: gcd.expected
+--- expected vs actual (unified diff) ---
+--- tests/expected/gcd.expected
++++ /tmp/cast_check_gcd_actual
+@@ -6 +6 @@
+-gcd(48, 18) = 6
++gcd(48, 18) = 7
+FAIL [gcd]: simulation output does not match expected
+```
+
+To run a single test:
 
 ```bash
 ctest --test-dir build -R example.fibonacci --output-on-failure
 ```
 
+### Expected output files
+
+The files in `tests/expected/` are the correctness specification for each example.
+Each file contains exactly the `print` output the simulation should produce over a
+100 ns run — VCD banner lines and the `$finish` timing line are stripped before
+comparison. Edit these files when a behavioural change is intentional.
+
 ### Adding a new example to the test suite
 
-Place the file in `examples/` and add one line to `CMakeLists.txt`:
+1. Place the `.cast` file in `examples/`.
+2. Add one line to `CMakeLists.txt`:
 
 ```cmake
 add_cast_test(my_new_example)
 ```
+
+3. *(Optional but recommended)* Create `tests/expected/my_new_example.expected`
+   containing the expected `print` output for a 100 ns simulation. With this file
+   present, Stage 3 runs automatically and `ninja check` enforces correctness.
+
+---
+
+## run_cast_test.sh
+
+`tests/run_cast_test.sh` is the script CTest calls for every test, but it can also
+be run directly to debug a single example without going through `ninja check`.
+
+```
+bash tests/run_cast_test.sh <castc> <file.cast> [<expected_file>]
+```
+
+| Argument | Required | Description |
+|----------|----------|-------------|
+| `<castc>` | yes | Path to the compiled `castc` binary |
+| `<file.cast>` | yes | The cast source file to test |
+| `<expected_file>` | no | Path to an expected output file — enables Stage 3 |
+
+**Compile and elaborate only (Stages 1–2):**
+
+```bash
+bash tests/run_cast_test.sh build/castc examples/counter.cast
+```
+
+**Compile, elaborate, and verify correctness (Stages 1–3):**
+
+```bash
+bash tests/run_cast_test.sh build/castc examples/gcd.cast tests/expected/gcd.expected
+```
+
+**Check a file that has no expected output yet (generate one):**
+
+```bash
+# Run the three stages manually to see what the simulation produces
+build/castc --tb --duration=100 examples/my_new.cast > /tmp/my_new.sv
+iverilog -g2012 -gno-assertions -o /tmp/my_new_sim /tmp/my_new.sv
+vvp /tmp/my_new_sim | grep -v '^VCD info:' | grep -v '\$finish called'
+# Review the output, then save it as the expected file
+vvp /tmp/my_new_sim | grep -v '^VCD info:' | grep -v '\$finish called' \
+    > tests/expected/my_new.expected
+```
+
+Intermediate files (`/tmp/cast_check_<name>.sv`, `/tmp/cast_check_<name>_sim`,
+`/tmp/cast_check_<name>_actual`) are left in `/tmp` after a run, so you can inspect
+the generated Verilog or replay the simulation without recompiling.
 
 ---
 

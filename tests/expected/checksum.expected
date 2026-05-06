@@ -1,0 +1,10 @@
+  byte[0] = 171  running xor = 0
+  byte[1] = 171  running xor = 171
+  byte[2] = 171  running xor = 0
+  byte[3] = 171  running xor = 171
+  byte[4] = 171  running xor = 0
+  byte[5] = 171  running xor = 171
+checksum of 5 bytes: 171
+--- resetting ---
+  byte[0] = 171  running xor = 0
+  byte[1] = 171  running xor = 171

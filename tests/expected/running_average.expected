@@ -1,0 +1,8 @@
+  sample[0] = 42  running total = 0
+  sample[1] = 42  running total = 42
+  sample[2] = 42  running total = 84
+  sample[3] = 42  running total = 126
+  sample[4] = 42  running total = 168
+  sample[5] = 42  running total = 210
+  sample[6] = 42  running total = 252
+  sample[7] = 42  running total = 294

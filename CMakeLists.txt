@@ -119,11 +119,20 @@ add_custom_target(check
 set(CAST_TEST_RUNNER ${CMAKE_SOURCE_DIR}/tests/run_cast_test.sh)
 set(CASTC_BIN        ${CMAKE_BINARY_DIR}/castc)
 set(EXAMPLES_DIR     ${CMAKE_SOURCE_DIR}/examples)
+set(EXPECTED_DIR     ${CMAKE_SOURCE_DIR}/tests/expected)
 
+# add_cast_test(<name>)
+#   Stage 1: castc compiles the example (--duration=100 when expected file present)
+#   Stage 2: iverilog elaborates the output Verilog
+#   Stage 3: vvp simulates and diffs against tests/expected/<name>.expected
+#            (only runs when the expected file exists)
 function(add_cast_test name)
     add_test(
         NAME    example.${name}
-        COMMAND bash ${CAST_TEST_RUNNER} ${CASTC_BIN} ${EXAMPLES_DIR}/${name}.cast
+        COMMAND bash ${CAST_TEST_RUNNER}
+                     ${CASTC_BIN}
+                     ${EXAMPLES_DIR}/${name}.cast
+                     ${EXPECTED_DIR}/${name}.expected
     )
     set_tests_properties(example.${name} PROPERTIES
         TIMEOUT 30

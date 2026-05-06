@@ -1,0 +1,9 @@
+    glitch detected — resetting stable count
+[sample] raw=1 last=0 stable=0
+[sample] raw=1 last=1 stable=0
+[sample] raw=1 last=1 stable=1
+[sample] raw=1 last=1 stable=2
+[sample] raw=1 last=1 stable=3
+[sample] raw=1 last=1 stable=4
+[sample] raw=1 last=1 stable=5
+[sample] raw=1 last=1 stable=6

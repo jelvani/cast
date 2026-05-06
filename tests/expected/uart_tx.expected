@@ -1,0 +1,9 @@
+  bit[0] = 0 (start)
+[load] transmitting byte = 85
+  bit[0] = 1 (data)
+  bit[1] = 0 (data)
+  bit[2] = 1 (data)
+  bit[3] = 0 (data)
+  bit[4] = 1 (data)
+  bit[5] = 0 (data)
+  bit[6] = 1 (data)

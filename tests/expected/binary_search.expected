@@ -1,0 +1,15 @@
+[load] searching for 42
+  lo=0 hi=127 mid=0
+  key > mid — go right
+  key < mid — go left
+  lo=1 hi=127 mid=63
+  lo=1 hi=62 mid=64
+  key < mid — go left
+  key > mid — go right
+  lo=1 hi=63 mid=31
+  lo=32 hi=63 mid=32
+  key > mid — go right
+  key < mid — go left
+  lo=33 hi=63 mid=47
+  lo=33 hi=46 mid=48
+  key < mid — go left

@@ -1,0 +1,8 @@
+[fetch] counting bits in 43981
+  n=43981 lsb=1 bits so far=0
+  n=21990 lsb=0 bits so far=1
+  n=10995 lsb=1 bits so far=1
+  n=5497 lsb=1 bits so far=2
+  n=2748 lsb=0 bits so far=3
+  n=1374 lsb=0 bits so far=3
+  n=687 lsb=1 bits so far=3
