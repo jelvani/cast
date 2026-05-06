@@ -1,0 +1,50 @@
+// Advanced: binary search on a hardcoded sorted range [0, 127].
+// Given a target value (received on the input channel) the machine finds
+// its position using the classic halving algorithm and reports the result.
+// Demonstrates multi-cycle computation with mid-point arithmetic.
+// Expected output: lo/hi/mid trace showing the halving, then "found at 42".
+
+machine BinarySearch {
+    interface {
+        input uint16 target;
+    }
+    shared {
+        var uint16 lo;
+        var uint16 hi;
+        var uint16 mid;
+        var uint16 key;
+    }
+    states {
+        load: target -> t {
+            print("[load] searching for ", t);
+            lo = 0;
+            hi = 127;
+            key = t;
+            goto search;
+        }
+        search: {
+            mid = (lo + hi) >> 1;
+            print("  lo=", lo, " hi=", hi, " mid=", mid);
+            if lo > hi {
+                print("not found");
+                goto load;
+            } else if mid == key {
+                print("found at index ", mid);
+                goto load;
+            } else if key < mid {
+                print("  key < mid — go left");
+                hi = mid - 1;
+                goto search;
+            } else {
+                print("  key > mid — go right");
+                lo = mid + 1;
+                goto search;
+            }
+        }
+    }
+}
+
+instantiate {
+    bs = BinarySearch();
+    bs.target <- 42;
+}

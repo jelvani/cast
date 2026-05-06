@@ -1,0 +1,30 @@
+// Beginner: generates the Fibonacci sequence indefinitely.
+// Shows how two shared registers can implement a recurrence relation.
+// The hardware trick: all register reads return the pre-update value, so
+//   new_b = a + b  and  new_a = b  evaluate using the same-cycle values.
+
+machine Fibonacci {
+    interface {}
+    shared {
+        var uint32 a;
+        var uint32 b;
+    }
+    states {
+        // seed: initialise b = 1 so the sequence starts 0, 1, 1, 2, 3 ...
+        seed: {
+            print("[seed] a=0, b=1 — starting sequence");
+            b = 1;
+            goto gen;
+        }
+        gen: {
+            print("fib: ", a);
+            b = a + b;
+            a = b;
+            goto gen;
+        }
+    }
+}
+
+instantiate {
+    f = Fibonacci();
+}

@@ -1,0 +1,34 @@
+
+machine Hello {
+	// all channels are declared here
+	interface {
+		input uint16 init_val;
+	}
+	// these are variables shared between states of a single machine
+	shared {
+		var uint16 cur_val;
+	}
+	// each state is defined here
+	states {
+		// all paths through a state must end in a goto
+		start: init_val -> index {
+			print("initial value is ", index);
+			cur_val = index;
+			goto incr;
+		}
+		incr: {
+			cur_val = cur_val + 1;
+			goto print;
+		}
+
+		print: {
+			print("current value is ", cur_val);
+			goto incr;
+		}
+		
+	}
+}
+instantiate {
+	m = Hello(); // defined externally
+	m.init_val <- 1;
+}

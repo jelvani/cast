@@ -3,7 +3,7 @@ enum commands = {CLEAR, PRINT};
 machine ReadMem [mem_size: uint16] {
 	// all channels are declared here
 	interface {
-		input uint16 idx;
+		input uint16 idx1;
 		input uint16 mem_val;
 		input commands trigger;
 		output uint16 memory_idx;

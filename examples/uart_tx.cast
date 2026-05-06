@@ -1,0 +1,44 @@
+// Advanced: UART transmitter (8N1 framing).
+// Accepts a byte on the input channel and serially transmits it:
+// 1 start bit (0), 8 data bits LSB-first, 1 stop bit (1).
+// With data=0x55 (01010101) the bit stream is: 0 1 0 1 0 1 0 1 0 1.
+
+machine UartTx {
+    interface {
+        input byte data;
+        output bool tx;
+    }
+    shared {
+        var uint16 shift;
+        var uint16 bit_idx;
+    }
+    states {
+        load: data -> d {
+            print("[load] transmitting byte = ", d);
+            print("  bit[0] = 0 (start)");
+            shift = d;
+            bit_idx = 0;
+            tx <- 0;
+            goto send;
+        }
+        send: {
+            bit_idx++;
+            if bit_idx == 9 {
+                print("  bit[9] = 1 (stop)");
+                print("[frame complete]");
+                tx <- 1;
+                goto load;
+            } else {
+                print("  bit[", bit_idx, "] = ", shift & 1, " (data)");
+                tx <- shift & 1;
+                shift >>= 1;
+                goto send;
+            }
+        }
+    }
+}
+
+instantiate {
+    u = UartTx();
+    u.data <- 0x55;
+}

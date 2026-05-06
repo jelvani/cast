@@ -1,0 +1,44 @@
+// Intermediate: pulse-width modulator (PWM).
+// Accepts a duty-cycle value (0-99) and generates a digital output signal
+// whose on-time fraction matches that percentage over a 100-cycle period.
+// With duty=30 the output is HIGH for phases 0-29 and LOW for phases 30-99.
+
+machine PWM {
+    interface {
+        input uint16 duty;
+        output uint16 pwm_out;
+    }
+    shared {
+        var uint16 phase;
+        var uint16 duty_latch;
+    }
+    states {
+        latch: duty -> d {
+            print("[latch] duty cycle = ", d, " / 100");
+            duty_latch = d;
+            phase = 0;
+            goto run;
+        }
+        run: {
+            if phase < duty_latch {
+                print("  phase=", phase, " OUT=1 (HIGH)");
+                pwm_out <- 1;
+            } else {
+                print("  phase=", phase, " OUT=0 (LOW)");
+                pwm_out <- 0;
+            }
+            phase++;
+            if phase == 100 {
+                print("[period complete] re-latching duty cycle");
+                goto latch;
+            } else {
+                goto run;
+            }
+        }
+    }
+}
+
+instantiate {
+    p = PWM();
+    p.duty <- 30;
+}

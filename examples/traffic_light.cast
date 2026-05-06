@@ -1,0 +1,55 @@
+// Intermediate: models a traffic light cycling red -> green -> yellow -> red.
+// Each phase lasts a fixed number of clock cycles.
+// Demonstrates timed state transitions using a countdown timer.
+// Timer counts down from its initial value; prints remaining time each cycle.
+
+machine TrafficLight {
+    interface {}
+    shared {
+        var uint16 timer;
+    }
+    states {
+        setup: {
+            print("[setup] loading red phase (50 cycles)");
+            timer = 50;
+            goto red;
+        }
+        red: {
+            if timer == 0 {
+                print("RED -> GREEN");
+                timer = 30;
+                goto green;
+            } else {
+                print("RED:    ", timer, " cycles remaining");
+                timer--;
+                goto red;
+            }
+        }
+        green: {
+            if timer == 0 {
+                print("GREEN -> YELLOW");
+                timer = 10;
+                goto yellow;
+            } else {
+                print("GREEN:  ", timer, " cycles remaining");
+                timer--;
+                goto green;
+            }
+        }
+        yellow: {
+            if timer == 0 {
+                print("YELLOW -> RED");
+                timer = 50;
+                goto red;
+            } else {
+                print("YELLOW: ", timer, " cycles remaining");
+                timer--;
+                goto yellow;
+            }
+        }
+    }
+}
+
+instantiate {
+    t = TrafficLight();
+}

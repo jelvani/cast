@@ -1,0 +1,42 @@
+// Beginner-Intermediate: computes GCD(48, 18) = 6 using the
+// subtraction-based Euclidean algorithm.
+// Shows multi-state control flow and compound assignments.
+// Expected output: series of subtraction steps, then "gcd(48, 18) = 6".
+
+machine GCD {
+    interface {}
+    shared {
+        var uint32 a;
+        var uint32 b;
+    }
+    states {
+        setup: {
+            print("[setup] a=48, b=18");
+            a = 48;
+            b = 18;
+            goto compute;
+        }
+        compute: {
+            if a > b {
+                print("  a=", a, " > b=", b, " => a -= b");
+                a -= b;
+                goto compute;
+            } else if b > a {
+                print("  b=", b, " > a=", a, " => b -= a");
+                b -= a;
+                goto compute;
+            } else {
+                print("gcd(48, 18) = ", a);
+                goto done;
+            }
+        }
+        done: {
+            print("[done] result held in register");
+            goto done;
+        }
+    }
+}
+
+instantiate {
+    g = GCD();
+}

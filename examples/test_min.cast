@@ -1,0 +1,31 @@
+enum commands = {CLEAR, PRINT};
+machine M {
+    interface {
+        input uint16 in1;
+        input commands trigger;
+        output uint16 out1;
+    }
+    shared {
+        var uint16 num_reads;
+        var uint16 val;
+    }
+    states {
+        s1: x <- in1 {
+            num_reads++;
+            val = x + 1;
+            out1 <- val;
+            goto s2;
+        }
+        s2: cmd <- trigger {
+            if (cmd == CLEAR) {
+                val = 0;
+            } else {
+                val = val * 2;
+            }
+            goto s1;
+        }
+    }
+}
+instantiate {
+    m = M();
+}

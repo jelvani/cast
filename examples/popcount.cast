@@ -1,0 +1,38 @@
+// Advanced: population count — counts the number of set bits in a 16-bit word.
+// Uses a two-state loop: fetch one value from the channel, then iterate bit
+// by bit (LSB-first) until the word is zero.
+// 0xABCD = 1010_1011_1100_1101 => 10 set bits.
+
+machine Popcount {
+    interface {
+        input uint16 value;
+    }
+    shared {
+        var uint16 n;
+        var uint16 bits;
+    }
+    states {
+        fetch: value -> v {
+            print("[fetch] counting bits in ", v);
+            n = v;
+            bits = 0;
+            goto count;
+        }
+        count: {
+            if n == 0 {
+                print("popcount = ", bits);
+                goto fetch;
+            } else {
+                print("  n=", n, " lsb=", n & 1, " bits so far=", bits);
+                bits += n & 1;
+                n >>= 1;
+                goto count;
+            }
+        }
+    }
+}
+
+instantiate {
+    p = Popcount();
+    p.value <- 0xABCD;
+}

@@ -1,0 +1,39 @@
+// Intermediate: threshold alarm with edge detection.
+// Prints once when a sensor value rises above the threshold and once when
+// it falls back below — not on every cycle — using a latching flag.
+// With sensor fixed at 120 (> 75) the alarm fires on the very first sample.
+
+machine Alarm {
+    interface {
+        input uint16 sensor;
+    }
+    shared {
+        var uint16 in_alarm;
+    }
+    states {
+        monitor: sensor -> val {
+            print("[monitor] received sensor = ", val);
+            if val > 75 {
+                if in_alarm == 0 {
+                    print("*** ALERT: threshold exceeded, value = ", val);
+                    in_alarm = 1;
+                } else {
+                    print("    (alarm already active)");
+                }
+            } else {
+                if in_alarm == 1 {
+                    print("*** OK: value back in range, value = ", val);
+                    in_alarm = 0;
+                } else {
+                    print("    (within range)");
+                }
+            }
+            goto monitor;
+        }
+    }
+}
+
+instantiate {
+    a = Alarm();
+    a.sensor <- 120;
+}

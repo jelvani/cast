@@ -1,0 +1,33 @@
+// Intermediate: accumulates 8 input samples then prints their integer average.
+// Demonstrates a streaming computation over an input channel.
+// The average is computed as sum / 8 using an arithmetic right-shift.
+// With all samples equal to 42 the average is 42.
+
+machine RunningAverage {
+    interface {
+        input uint16 value;
+    }
+    shared {
+        var uint32 total;
+        var uint16 count;
+    }
+    states {
+        accumulate: value -> v {
+            total += v;
+            count++;
+            print("  sample[", count, "] = ", v, "  running total = ", total);
+            if count == 8 {
+                print("average of 8 samples: ", total >> 3);
+                print("--- resetting ---");
+                total = 0;
+                count = 0;
+            }
+            goto accumulate;
+        }
+    }
+}
+
+instantiate {
+    r = RunningAverage();
+    r.value <- 42;
+}

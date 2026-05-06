@@ -1,0 +1,47 @@
+// Intermediate: digital debouncer for a noisy button signal.
+// The input must be stable (same value) for 16 consecutive cycles before
+// the debounced output register is updated and a change is reported.
+// Models the classic counter-based hardware debounce circuit.
+// With button fixed at 1 the output latches after 16 stable cycles.
+
+machine Debounce {
+    interface {
+        input bool button;
+    }
+    shared {
+        var uint16 stable_count;
+        var uint16 last_raw;
+        var uint16 debounced;
+    }
+    states {
+        sample: button -> raw {
+            print("[sample] raw=", raw, " last=", last_raw, " stable=", stable_count);
+            if raw == last_raw {
+                stable_count++;
+                if stable_count == 16 {
+                    if raw != debounced {
+                        debounced = raw;
+                        if raw == 1 {
+                            print("==> button PRESSED (debounced)");
+                        } else {
+                            print("==> button RELEASED (debounced)");
+                        }
+                    } else {
+                        print("    (stable but no change in debounced output)");
+                    }
+                    stable_count = 0;
+                }
+            } else {
+                print("    glitch detected — resetting stable count");
+                stable_count = 0;
+                last_raw = raw;
+            }
+            goto sample;
+        }
+    }
+}
+
+instantiate {
+    d = Debounce();
+    d.button <- 1;
+}

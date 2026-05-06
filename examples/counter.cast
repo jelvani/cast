@@ -1,0 +1,24 @@
+// Beginner: counts from 0 to 9, prints each value, then wraps back to 0.
+// Demonstrates the simplest possible self-contained state machine.
+
+machine Counter {
+    interface {}
+    shared {
+        var uint16 n;
+    }
+    states {
+        count: {
+            print("count: ", n);
+            n++;
+            if n == 10 {
+                print("--- wrap: resetting to 0 ---");
+                n = 0;
+            }
+            goto count;
+        }
+    }
+}
+
+instantiate {
+    c = Counter();
+}

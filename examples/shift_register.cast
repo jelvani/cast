@@ -1,0 +1,35 @@
+// Advanced: serial-in parallel-out (SIPO) shift register.
+// Shifts in one bit per cycle; once 8 bits are collected it prints the
+// assembled byte and starts over. With a constant 1-bit feed the output
+// is 0xFF (255) every 8 cycles.
+// Demonstrates bit manipulation (shift + OR) on a streaming channel.
+
+machine ShiftRegister {
+    interface {
+        input bool bit_in;
+    }
+    shared {
+        var byte buffer;
+        var uint16 pos;
+    }
+    states {
+        receive: bit_in -> b {
+            buffer <<= 1;
+            buffer = buffer | b;
+            pos++;
+            print("  bit[", pos, "] = ", b, "  buffer = ", buffer);
+            if pos == 8 {
+                print("byte assembled: ", buffer);
+                print("--- resetting ---");
+                buffer = 0;
+                pos = 0;
+            }
+            goto receive;
+        }
+    }
+}
+
+instantiate {
+    sr = ShiftRegister();
+    sr.bit_in <- 1;
+}

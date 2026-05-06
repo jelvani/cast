@@ -1,0 +1,33 @@
+// Intermediate: XOR checksum over a rolling 5-byte window.
+// Every 5 bytes received, the accumulated XOR is printed and the state resets.
+// XOR is its own inverse, so an odd-sized window on a fixed feed gives
+// a non-trivial result: five times 0xAB = 0xAB (171).
+
+machine Checksum {
+    interface {
+        input byte data;
+    }
+    shared {
+        var byte csum;
+        var uint16 count;
+    }
+    states {
+        accumulate: data -> b {
+            csum ^= b;
+            count++;
+            print("  byte[", count, "] = ", b, "  running xor = ", csum);
+            if count == 5 {
+                print("checksum of 5 bytes: ", csum);
+                print("--- resetting ---");
+                csum = 0;
+                count = 0;
+            }
+            goto accumulate;
+        }
+    }
+}
+
+instantiate {
+    c = Checksum();
+    c.data <- 0xAB;
+}
