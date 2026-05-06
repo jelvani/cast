@@ -508,7 +508,7 @@ std::any LowerVisitor::visitIdent(castParser::IdentContext *antlrCtx)
 
 std::any LowerVisitor::visitNumber_literal(castParser::Number_literalContext *antlrCtx)
 {
-    int64_t value = std::stoll(antlrCtx->getText());
+    int64_t value = std::stoll(antlrCtx->getText(), nullptr, 0);
     // Use the surrounding type hint when available; otherwise default to i32.
     mlir::Type t = this->currentExprType ? this->currentExprType : builder.getI32Type();
     if (!mlir::isa<mlir::IntegerType>(t)) t = builder.getI32Type();
