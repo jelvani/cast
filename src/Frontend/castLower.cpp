@@ -23,8 +23,6 @@
 #include <circt/Dialect/Seq/SeqOps.h>
 #include "llvm/Support/raw_ostream.h"
 
-#include <print>
-
 using namespace std;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -247,7 +245,7 @@ std::any LowerVisitor::visitDecl_interface(castParser::Decl_interfaceContext *an
                 port.dir = circt::hw::ModulePort::Direction::Output;
                 break;
             default:
-                println("Machine port input/output error");
+                std::cerr << "Machine port input/output error\n";
                 exit(0);
             }
             this->currentPorts.push_back(port);
@@ -1046,7 +1044,7 @@ std::any LowerVisitor::visitInst_module(castParser::Inst_moduleContext *antlrCtx
 
     if (!this->modules.contains(moduleName))
     {
-        println("Error: module '{}' not found for instantiation!", moduleName);
+        std::cerr << "Error: module '" << moduleName << "' not found for instantiation!\n";
         exit(0);
     }
     circt::hw::HWModuleOp mod = this->modules[moduleName];
@@ -1086,7 +1084,7 @@ std::any LowerVisitor::visitInst_module(castParser::Inst_moduleContext *antlrCtx
         }
         else
         {
-            println("Error: unsupported port type for port '{}' in module '{}'!", port.name, moduleName);
+            std::cerr << "Error: unsupported port type for port '" << port.name.getValue().str() << "' in module '" << moduleName << "'!\n";
             exit(0);
         }
     }
@@ -1094,7 +1092,7 @@ std::any LowerVisitor::visitInst_module(castParser::Inst_moduleContext *antlrCtx
         builder, builder.getUnknownLoc(), mod, varName, instanceOperands);
     if (this->instances.contains(varName))
     {
-        println("instance: {} is already declared!", varName);
+        std::cerr << "instance: " << varName << " is already declared!\n";
         exit(0);
     }
     this->instances[varName] = instance;
