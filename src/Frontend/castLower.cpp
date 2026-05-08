@@ -26,6 +26,16 @@
 using namespace std;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Error helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+[[noreturn]] static void notImplemented(const std::string &construct)
+{
+    std::cerr << "Error: '" << construct << "' is not yet supported by the cast compiler.\n";
+    exit(1);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -245,8 +255,8 @@ std::any LowerVisitor::visitDecl_interface(castParser::Decl_interfaceContext *an
                 port.dir = circt::hw::ModulePort::Direction::Output;
                 break;
             default:
-                std::cerr << "Machine port input/output error\n";
-                exit(0);
+                std::cerr << "Error: machine port must be 'input' or 'output'.\n";
+                exit(1);
             }
             this->currentPorts.push_back(port);
         }
@@ -535,8 +545,8 @@ std::any LowerVisitor::visitExpr(castParser::ExprContext *antlrCtx)
     if (antlrCtx->ident()) return visit(antlrCtx->ident());
     if (antlrCtx->ident_field()) return visit(antlrCtx->ident_field());
     if (antlrCtx->number_literal()) return visit(antlrCtx->number_literal());
-    if (antlrCtx->string_literal()) return std::any();
-    if (antlrCtx->nil_literal()) return std::any();
+    if (antlrCtx->string_literal()) notImplemented("string literals in expressions");
+    if (antlrCtx->nil_literal()) notImplemented("nil literals");
     if (antlrCtx->expr_func_call()) return visit(antlrCtx->expr_func_call());
 
     auto subExprs = antlrCtx->expr();
@@ -557,7 +567,7 @@ std::any LowerVisitor::visitExpr(castParser::ExprContext *antlrCtx)
             mlir::Value one = circt::hw::ConstantOp::create(builder, loc, v.getType(), 1);
             return mlir::Value(circt::comb::XorOp::create(builder, loc, v, one));
         }
-        return v;
+        notImplemented("unary operator '" + opTxt + "'");
     }
 
     // Binary: expr bin_op expr.
@@ -600,7 +610,7 @@ std::any LowerVisitor::visitExpr(castParser::ExprContext *antlrCtx)
         if (op == "<=") return mlir::Value(circt::comb::ICmpOp::create(builder, loc, circt::comb::ICmpPredicate::ule, lhs, rhs));
         if (op == ">")  return mlir::Value(circt::comb::ICmpOp::create(builder, loc, circt::comb::ICmpPredicate::ugt, lhs, rhs));
         if (op == ">=") return mlir::Value(circt::comb::ICmpOp::create(builder, loc, circt::comb::ICmpPredicate::uge, lhs, rhs));
-        return std::any();
+        notImplemented("binary operator '" + op + "'");
     }
 
     // Update: expr++ / expr-- — when the operand is a known variable, emit a
@@ -688,6 +698,11 @@ std::any LowerVisitor::visitExpr(castParser::ExprContext *antlrCtx)
             return std::any();
         }
     }
+
+    // Array/slice indexing: expr '[' ... ']' — not yet supported.
+    for (auto *c : antlrCtx->children)
+        if (auto *t = dynamic_cast<antlr4::tree::TerminalNode *>(c))
+            if (t->getText() == "[") notImplemented("array/slice indexing");
 
     return visitChildren(antlrCtx);
 }
@@ -1045,7 +1060,7 @@ std::any LowerVisitor::visitInst_module(castParser::Inst_moduleContext *antlrCtx
     if (!this->modules.contains(moduleName))
     {
         std::cerr << "Error: module '" << moduleName << "' not found for instantiation!\n";
-        exit(0);
+        exit(1);
     }
     circt::hw::HWModuleOp mod = this->modules[moduleName];
     llvm::SmallVector<circt::hw::PortInfo, 4> portInfo = mod.getPortList();
@@ -1085,15 +1100,15 @@ std::any LowerVisitor::visitInst_module(castParser::Inst_moduleContext *antlrCtx
         else
         {
             std::cerr << "Error: unsupported port type for port '" << port.name.getValue().str() << "' in module '" << moduleName << "'!\n";
-            exit(0);
+            exit(1);
         }
     }
     circt::hw::InstanceOp instance = circt::hw::InstanceOp::create(
         builder, builder.getUnknownLoc(), mod, varName, instanceOperands);
     if (this->instances.contains(varName))
     {
-        std::cerr << "instance: " << varName << " is already declared!\n";
-        exit(0);
+        std::cerr << "Error: instance '" << varName << "' is already declared!\n";
+        exit(1);
     }
     this->instances[varName] = instance;
     std::any result = visitChildren(antlrCtx);
@@ -1124,4 +1139,48 @@ std::any LowerVisitor::visitIdent_field(castParser::Ident_fieldContext *antlrCtx
         }
     }
     return std::any();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Unimplemented grammar constructs — exit with an informative message
+// ─────────────────────────────────────────────────────────────────────────────
+
+std::any LowerVisitor::visitStmt_for(castParser::Stmt_forContext *)
+{
+    notImplemented("for loops");
+}
+
+std::any LowerVisitor::visitStmt_switch(castParser::Stmt_switchContext *)
+{
+    notImplemented("switch statements");
+}
+
+std::any LowerVisitor::visitStmt_return(castParser::Stmt_returnContext *)
+{
+    notImplemented("return statements");
+}
+
+std::any LowerVisitor::visitDecl_func(castParser::Decl_funcContext *)
+{
+    notImplemented("function declarations ('func')");
+}
+
+std::any LowerVisitor::visitDecl_type(castParser::Decl_typeContext *)
+{
+    notImplemented("type declarations ('type')");
+}
+
+std::any LowerVisitor::visitDecl_memory(castParser::Decl_memoryContext *)
+{
+    notImplemented("memory blocks ('memory')");
+}
+
+std::any LowerVisitor::visitDecl_exception(castParser::Decl_exceptionContext *)
+{
+    notImplemented("exception handlers ('exception')");
+}
+
+std::any LowerVisitor::visitDecl_assertions(castParser::Decl_assertionsContext *)
+{
+    notImplemented("assertion blocks ('assertions')");
 }

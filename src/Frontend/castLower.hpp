@@ -56,6 +56,14 @@ public:
     std::any visitExpr_func_call(castParser::Expr_func_callContext *antlrCtx) override;
     std::any visitDecl_var(castParser::Decl_varContext *antlrCtx) override;
     std::any visitDecl_enum(castParser::Decl_enumContext *antlrCtx) override;
+    std::any visitDecl_func(castParser::Decl_funcContext *antlrCtx) override;
+    std::any visitDecl_type(castParser::Decl_typeContext *antlrCtx) override;
+    std::any visitDecl_memory(castParser::Decl_memoryContext *antlrCtx) override;
+    std::any visitDecl_exception(castParser::Decl_exceptionContext *antlrCtx) override;
+    std::any visitDecl_assertions(castParser::Decl_assertionsContext *antlrCtx) override;
+    std::any visitStmt_for(castParser::Stmt_forContext *antlrCtx) override;
+    std::any visitStmt_switch(castParser::Stmt_switchContext *antlrCtx) override;
+    std::any visitStmt_return(castParser::Stmt_returnContext *antlrCtx) override;
 
     std::optional<mlir::Type> getMlirType(castParser::Ident_typedContext *typedIdentCtx);
 
